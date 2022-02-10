@@ -1,0 +1,211 @@
+---
+title: "Homework1"
+author: "Kevin O'Connor"
+date: "2/9/2022"
+output: pdf_document
+---
+
+
+```{r Loading Libraries, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(mosaic)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(modelr)
+library(rsample)
+library(caret)
+library(parallel)
+library(foreach)
+```
+
+
+# Problem 1
+```{r Problem 1a, message=FALSE, warning=FALSE}
+ABIA <- read_csv("ABIA.csv")
+
+ABIA_Adjust = ABIA%>% select(UniqueCarrier,ArrDelay,Origin)
+
+ABIA_Adjust = na.omit(ABIA_Adjust)
+
+mean_table =ABIA_Adjust %>%
+dplyr::filter(str_detect(Origin,"AUS"))%>%
+  group_by(UniqueCarrier) %>%
+  summarize(mean_delay = mean(ArrDelay))
+
+mean_table %>% ggplot(aes(fct_reorder(UniqueCarrier,mean_delay),mean_delay)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Average Time Late on Arrival(min)", x="Airline", title = "Departing Austin: Which Airline is Most Late on Average")+theme_linedraw()
+```
+Imagine you are the most sensitive person to having your time wasted in Austin. Every flight you take feels like a torturous lottery. You may wonder which airlines are more likely to be on time. As we see in the above naive plot, some airlines appear truly later than others. Particularly, Delta and PSA Airlines. Is it fair to make this judgement? Perhaps there are other factors influencing the distribution. For example, maybe some airlines are far more likely to travel longer distances, and thereby lose more time on the longer flights due to factors such as prevailing winds on a particular long route.
+
+
+```{r Problem 1b, message=FALSE, warning=FALSE}
+ABIA_Adjust = ABIA%>% select(UniqueCarrier,ArrDelay,Origin,Dest,Month)
+
+ABIA_Adjust = na.omit(ABIA_Adjust)
+
+mean_table =ABIA_Adjust %>%
+dplyr::filter(str_detect(Origin,"AUS"))%>%
+  group_by(UniqueCarrier,Month) %>%
+  summarize(mean_delay = mean(ArrDelay))
+
+mean_table %>% ggplot(aes(x=UniqueCarrier, y=mean_delay, group=Month)) + geom_boxplot()+ylim (1,40)
+```
+A possibly more honest way to look at the data would be to plot the distributions of average late arrivals over the months. From this view, we can see that even with relatively low averages, some airlines have far more variability in their arrival times. From the previous graph, one might consider United Airlines (UA) as a reliable choice. However, United has some of the most extreme variation in late arrival times. This may be a better view of consistency.
+
+# Problem 2
+## Part A:
+```{r Problem 2a, message=FALSE, warning=FALSE}
+billboard <- read_csv("billboard.csv")
+
+billboard_ct = billboard %>%
+mutate(count = weeks_on_chart)
+
+billboard_c <- billboard %>% group_by(performer,song) %>%
+mutate(count = max(weeks_on_chart)) %>%
+arrange(desc(count))
+
+billboard_cd <- billboard_c %>%
+select(performer, song, count)
+
+billboard_ce <- unique(billboard_cd)
+
+top_ten <- billboard_ce[1:10,]
+print(top_ten)
+```
+## Part B:
+```{r Problem 2b, message=FALSE, warning=FALSE}
+billboard_u <- billboard %>%
+select(year,song)
+
+billboard_u = unique(billboard_u)
+
+spy <- billboard_u %>% count(year)
+
+
+spy_adjust = spy %>% slice(-c(1,64))
+year = spy_adjust$year
+number_of_songs = spy_adjust$n
+
+ggplot(data = spy_adjust) + geom_line(aes(x= year,y=number_of_songs), color = "steelblue",size =2) + labs(y= "Number of Unique Songs", x="Year", title = "Musical Diversity on the Billboard Top 100") +theme_linedraw()
+```
+
+## Part C:
+```{r Problem 2c, message=FALSE, warning=FALSE}
+twh = billboard_ce %>%
+mutate(ten_week_hit = ifelse(count >= 10, yes=1, no =0))
+
+ten_week_hit = twh$ten_week_hit
+performer = twh$performer
+
+twhl = twh[!(twh$ten_week_hit=="0"),] %>%
+group_by(performer)%>%
+count(ten_week_hit)%>%
+arrange(desc(n))
+final_list = twhl[1:19,] %>% select(performer,n)
+
+performer = final_list$performer
+number_of_ten_week_hits = final_list$n
+
+
+final_list %>% ggplot(aes(fct_reorder(performer,number_of_ten_week_hits),number_of_ten_week_hits)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Number of Ten Week Hits", x="Performing Artist", title = "Artists With the Most Ten Week Hits")+theme_linedraw()
+```
+
+# Problem 3
+## Part A:
+```{r Problem 3a, message=FALSE, warning=FALSE}
+olympics_top20 <- read_csv("olympics_top20.csv")
+
+q95 <- olympics_top20 %>%
+filter(str_detect(sex,"F")) %>%
+group_by(event) %>%
+summarize(quant95 = quantile(height, prob =(.95)))
+print(q95)
+```
+## Part B:
+```{r Problem 3b, message=FALSE, warning=FALSE}
+wsd <- olympics_top20 %>%
+filter(str_detect(sex,"F")) %>%
+group_by(event) %>%
+summarize(sd = sd(height))%>%
+arrange(desc(sd))
+print(wsd[1,])
+```
+## Part C:
+```{r Problem 3c, message=FALSE, warning=FALSE}
+swm <- olympics_top20 %>%
+filter(str_detect(sport, "Swimming")) %>%
+group_by(year, sex) %>%
+summarize(age = mean(age))
+
+swm%>%
+ggplot() + geom_line(aes(x=year, y=age, group =sex, color = sex),size =2) + labs(y= "Athlete Age", x="Year", title = "Average Age of Olympic Swimmers") +theme_linedraw()
+```
+# Problem 4
+## Part A:
+```{r Problem 4a, message=FALSE, warning=FALSE}
+sclass <- read_csv("sclass.csv")
+
+Three_Fifty = sclass %>%
+  filter(trim == 350)
+set.seed(23)
+split = initial_split(Three_Fifty, prop=.8)
+Three_Fifty_train = training(split)
+Three_Fifty_test = testing(split)
+
+rmse_out=foreach(k=1:150, .combine='rbind')%do%{
+
+
+knn_model = knnreg(price ~mileage, data = Three_Fifty_train, k =k)
+modelr::rmse(knn_model,Three_Fifty_test)
+} %>% as.data.frame
+rmse_out
+
+row_adjust = c(1:150)
+rownames(rmse_out) = row_adjust
+rmse_out$k <- c(1:150) 
+
+ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=20, linetype="dashed", color = "red")
+```
+```{r Problem 4b, message=FALSE, warning=FALSE}
+knn_model1 = knnreg(price ~mileage, data = Three_Fifty_train, k =20)
+Three_Fifty_test= Three_Fifty_test %>%
+  mutate(TF_pred = predict(knn_model1,Three_Fifty_test))
+
+Three_Fifty_test %>%
+  ggplot() + geom_point(aes(x=mileage, y=price)) + geom_line(aes(x=mileage, y=TF_pred),color = "darkred") + theme_linedraw() +labs(y= "Price", x="Mileage", title = "Predicted Price of Secondhand Mercedes S350")+ scale_x_continuous(labels = scales:: comma)
+```
+
+
+```{r Problem 4c, message=FALSE, warning=FALSE}
+Sixty_five_AMG = sclass %>%
+  filter(str_detect(trim,"65 AMG"))
+set.seed(123)
+split = initial_split(Sixty_five_AMG, prop=.8)
+Sixty_five_AMG_train = training(split)
+Sixty_five_AMG_test = testing(split)
+
+rmse_out=foreach(k=1:150, .combine='rbind')%do%{
+
+
+
+knn_model = knnreg(price ~mileage, data = Sixty_five_AMG_train, k =k)
+modelr::rmse(knn_model,Sixty_five_AMG_test)
+} %>% as.data.frame
+rmse_out
+
+row_adjust = c(1:150)
+rownames(rmse_out) = row_adjust
+rmse_out$k <- c(1:150) 
+
+ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=17, linetype="dashed", color = "red")
+```
+
+```{r Problem 4d, message=FALSE, warning=FALSE}
+knn_model2 = knnreg(price ~mileage,data = Sixty_five_AMG_train, k =17)
+data = Sixty_five_AMG_test= Sixty_five_AMG_test %>%
+  mutate(TF_pred = predict(knn_model2,Sixty_five_AMG_test))
+
+Sixty_five_AMG_test %>%
+  ggplot() + geom_point(aes(x=mileage, y=price)) + geom_line(aes(x=mileage, y=TF_pred),color = "darkred") + theme_linedraw() +labs(y= "Price", x="Mileage", title = "Predicted Price of Secondhand Mercedes 65 AMG") + scale_x_continuous(labels = scales:: comma)
+```
