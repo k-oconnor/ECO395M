@@ -49,3 +49,8 @@ data/ercot/dewpoint_impute.csv
 # old exercises
 exercises_old/ 
 
+#Data files
+exercises/ABIA
+exercises/billboard
+exercises/olympics_top20
+exercises/sclass
