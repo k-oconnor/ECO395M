@@ -36,8 +36,6 @@ dplyr::filter(str_detect(Origin,"AUS"))%>%
   summarize(mean_delay = mean(ArrDelay))
 
 mean_table %>% ggplot(aes(fct_reorder(UniqueCarrier,mean_delay),mean_delay)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Average Time Late on Arrival(min)", x="Airline", title = "Departing Austin: Which Airline is Most Late on Average")+theme_linedraw()
-
-include_graphics(Homework1_files/figure-markdown_strict/Problem%201a-1.png)
 ```
 
 Imagine you are the most sensitive person to having your time wasted in Austin. Every flight you take feels like a torturous lottery. You may wonder which airlines are more likely to be on time. As we see in the above naive plot, some airlines appear truly later than others. Particularly, Delta and PSA Airlines. Is it fair to make this judgement? Perhaps there are other factors influencing the distribution. For example, maybe some airlines are far more likely to travel longer distances, and thereby lose more time on the longer flights due to factors such as prevailing winds on a particular long route.
@@ -184,8 +182,6 @@ rownames(rmse_out) = row_adjust
 rmse_out$k <- c(1:150) 
 
 ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=67, linetype="dashed", color = "red")
-
-include_graphics()
 ```
 
 ```{r Problem 4b, message=FALSE, warning=FALSE}

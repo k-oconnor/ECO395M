@@ -600,13 +600,14 @@ age into the 2000s.
     Sixty_five_AMG_test %>%
       ggplot() + geom_point(aes(x=mileage, y=price)) + geom_line(aes(x=mileage, y=TF_pred),color = "darkred") + theme_linedraw() +labs(y= "Price", x="Mileage", title = "Predicted Price of Secondhand Mercedes 65 AMG") + scale_x_continuous(labels = scales:: comma)
 
-![](Homework1_files/figure-markdown_strict/Problem%204d-1.png) When
-choosing an optimal value for “K” in KNN models, we have to consider the
-bias-variance trade off. As K decreases, the variance of the fit tends
-to increase,and bias decreases. As shown in the RMSE vs. K plots, the
-optimal value of K varies between the different trim levels of the
-Mercedes S-Class. For the S350 trim level, we select an optimal K value
-of 67. For the 65 AMG trim, we select an optimal K of 15.
+![](Homework1_files/figure-markdown_strict/Problem%204d-1.png)
+
+When choosing an optimal value for “K” in KNN models, we have to
+consider the bias-variance trade off. As K decreases, the variance of
+the fit tends to increase,and bias decreases. As shown in the RMSE vs. K
+plots, the optimal value of K varies between the different trim levels
+of the Mercedes S-Class. For the S350 trim level, we select an optimal K
+value of 67. For the 65 AMG trim, we select an optimal K of 15.
 
 What is the reason behind the different values of K between the trim
 levels? I believe that the answer lies in the sizes of the data sets for
