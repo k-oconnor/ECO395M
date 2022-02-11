@@ -2,7 +2,7 @@
 title: "Homework1"
 author: "Kevin O'Connor"
 date: "2/9/2022"
-output: pdf_document
+output: md_document
 ---
 
 
@@ -73,6 +73,8 @@ billboard_ce <- unique(billboard_cd)
 top_ten <- billboard_ce[1:10,]
 print(top_ten)
 ```
+We are tasked with making a table of the 10 most popular songs measured by the total number of weeks the song appeared in the billboard "Top 100" list. We observe that some newer songs from the early 2010s and 2000s are some of the most popular of all time. Imagine Dragons' smash hit "Radioactive", with almost two years of being on the top 100 is a clear standout winner.
+
 ## Part B:
 ```{r Problem 2b, message=FALSE, warning=FALSE}
 billboard_u <- billboard %>%
@@ -89,7 +91,7 @@ number_of_songs = spy_adjust$n
 
 ggplot(data = spy_adjust) + geom_line(aes(x= year,y=number_of_songs), color = "steelblue",size =2) + labs(y= "Number of Unique Songs", x="Year", title = "Musical Diversity on the Billboard Top 100") +theme_linedraw()
 ```
-
+In this figure, we are measuring musical diversity defined as the number of unique songs to appear on the Billboard "Top 100" list over the course of a given year. We omitted 1958 and 2021 from this figure, as the data for these two years is incomplete. We observe that musical diversity steadily declined from the 60's onward into the 2000s. In 2004, musical diversity began to rebound to where music is almost as diverse in the 2020s as in the measures all time high in the mid 1960s.
 ## Part C:
 ```{r Problem 2c, message=FALSE, warning=FALSE}
 twh = billboard_ce %>%
@@ -110,7 +112,7 @@ number_of_ten_week_hits = final_list$n
 
 final_list %>% ggplot(aes(fct_reorder(performer,number_of_ten_week_hits),number_of_ten_week_hits)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Number of Ten Week Hits", x="Performing Artist", title = "Artists With the Most Ten Week Hits")+theme_linedraw()
 ```
-
+In this figure, we are dialing in on major hits that were on the Billboard "Top 100" list for at least 10 weeks, which we will refer to as "Ten Week Hits", and the artists that performed them. Some artists have been astonishingly successful at making many chart topping hits. We observe 19 artists with at least 30 "Ten Week Hits". Elton John is the most successful of all time, with a mind boggling 53 "Ten Week Hits".
 # Problem 3
 ## Part A:
 ```{r Problem 3a, message=FALSE, warning=FALSE}
@@ -119,18 +121,21 @@ olympics_top20 <- read_csv("olympics_top20.csv")
 q95 <- olympics_top20 %>%
 filter(str_detect(sex,"F")) %>%
 group_by(event) %>%
-summarize(quant95 = quantile(height, prob =(.95)))
+summarize(Height_at_95th_Quantile = quantile(height, prob =(.95)))
 print(q95)
 ```
+How does height vary across all of the women's olympic events? In the above table, we show what height at the 95th quantile is for each of the 132 women's olympic events in centimeters. Unsurprisingly, the tallest women at the 95th quantile are Women's Basketball players, with a 95th quantile height of 197.55 cm.
 ## Part B:
 ```{r Problem 3b, message=FALSE, warning=FALSE}
 wsd <- olympics_top20 %>%
 filter(str_detect(sex,"F")) %>%
 group_by(event) %>%
-summarize(sd = sd(height))%>%
-arrange(desc(sd))
+summarize(Standard_Deviation_Height = sd(height))%>%
+arrange(desc(Standard_Deviation_Height))
 print(wsd[1,])
 ```
+In which women's Olympic event is the variation in height the greatest? We would expect that it would be an event where height doesn't provide much of a meaningful advantage, and what we would expect is evidently true. In "Rowing Women's Coxed Fours", the standard deviation of height is 10.865 cm.
+
 ## Part C:
 ```{r Problem 3c, message=FALSE, warning=FALSE}
 swm <- olympics_top20 %>%
@@ -141,6 +146,8 @@ summarize(age = mean(age))
 swm%>%
 ggplot() + geom_line(aes(x=year, y=age, group =sex, color = sex),size =2) + labs(y= "Athlete Age", x="Year", title = "Average Age of Olympic Swimmers") +theme_linedraw()
 ```
+How has the average age of Olympic swimmers changed over the years? For men, we initially observe that swimmers were extremely young, at 18 years old. The average age rose sharply into the 1920s before sharply declining to 19 years of age, and stabilizing around 20 years old until the late 1970s. Since the 1970s, age has been steadily increasing to the mid 20s. Woman swimmers were allowed to participate in the games starting in the 1920s. Women swimmers on average have been roughly two years younger than their male counterparts.The overall trend however has been similar. In the mid to late 1970s, the average age of women swimmers began to steadily increase from younger than 18 to 22 years of age into the 2000s.
+
 # Problem 4
 ## Part A:
 ```{r Problem 4a, message=FALSE, warning=FALSE}
@@ -165,10 +172,10 @@ row_adjust = c(1:150)
 rownames(rmse_out) = row_adjust
 rmse_out$k <- c(1:150) 
 
-ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=20, linetype="dashed", color = "red")
+ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=67, linetype="dashed", color = "red")
 ```
 ```{r Problem 4b, message=FALSE, warning=FALSE}
-knn_model1 = knnreg(price ~mileage, data = Three_Fifty_train, k =20)
+knn_model1 = knnreg(price ~mileage, data = Three_Fifty_train, k =67)
 Three_Fifty_test= Three_Fifty_test %>%
   mutate(TF_pred = predict(knn_model1,Three_Fifty_test))
 
@@ -198,14 +205,17 @@ row_adjust = c(1:150)
 rownames(rmse_out) = row_adjust
 rmse_out$k <- c(1:150) 
 
-ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=17, linetype="dashed", color = "red")
+ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=15, linetype="dashed", color = "red")
 ```
 
 ```{r Problem 4d, message=FALSE, warning=FALSE}
-knn_model2 = knnreg(price ~mileage,data = Sixty_five_AMG_train, k =17)
+knn_model2 = knnreg(price ~mileage,data = Sixty_five_AMG_train, k =15)
 data = Sixty_five_AMG_test= Sixty_five_AMG_test %>%
   mutate(TF_pred = predict(knn_model2,Sixty_five_AMG_test))
 
 Sixty_five_AMG_test %>%
   ggplot() + geom_point(aes(x=mileage, y=price)) + geom_line(aes(x=mileage, y=TF_pred),color = "darkred") + theme_linedraw() +labs(y= "Price", x="Mileage", title = "Predicted Price of Secondhand Mercedes 65 AMG") + scale_x_continuous(labels = scales:: comma)
 ```
+When choosing an optimal value for "K" in KNN models, we have to consider the bias-variance trade off. As K decreases, the variance of the fit tends to increase,and bias decreases. As shown in the RMSE vs. K plots, the optimal value of K varies between the different trim levels of the Mercedes S-Class. For the S350 trim level, we select an optimal K value of 67. For the 65 AMG trim, we select an optimal K of 15.
+
+What is the reason behind the different values of K between the trim levels? I believe that the answer lies in the sizes of the data sets for each trim level. There are 416 observations for the S350 trim, and 292 for the S65 AMG trim. As we are selecting for the lowest RMSE, we would expect the data set with more observations to favor lower variance over bias, as with the higher amount of observations, bias is likely lower to begin with. For the smaller data set, we would expect the converse to be true. We will favor lower bias estimates over higher variance estimates.
