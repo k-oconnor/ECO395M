@@ -8,6 +8,7 @@
     library(caret)
     library(parallel)
     library(foreach)
+    library(knitr)
 
 # Problem 1
 
@@ -24,16 +25,17 @@
 
     mean_table %>% ggplot(aes(fct_reorder(UniqueCarrier,mean_delay),mean_delay)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Average Time Late on Arrival(min)", x="Airline", title = "Departing Austin: Which Airline is Most Late on Average")+theme_linedraw()
 
-![](Homework1_files/figure-markdown_strict/Problem%201a-1.png) Imagine
-you are the most sensitive person to having your time wasted in Austin.
-Every flight you take feels like a torturous lottery. You may wonder
-which airlines are more likely to be on time. As we see in the above
-naive plot, some airlines appear truly later than others. Particularly,
-Delta and PSA Airlines. Is it fair to make this judgement? Perhaps there
-are other factors influencing the distribution. For example, maybe some
-airlines are far more likely to travel longer distances, and thereby
-lose more time on the longer flights due to factors such as prevailing
-winds on a particular long route.
+![](Homework1_files/figure-markdown_strict/Problem%201a-1.png)
+
+Imagine you are the most sensitive person to having your time wasted in
+Austin. Every flight you take feels like a torturous lottery. You may
+wonder which airlines are more likely to be on time. As we see in the
+above naive plot, some airlines appear truly later than others.
+Particularly, Delta and PSA Airlines. Is it fair to make this judgement?
+Perhaps there are other factors influencing the distribution. For
+example, maybe some airlines are far more likely to travel longer
+distances, and thereby lose more time on the longer flights due to
+factors such as prevailing winds on a particular long route.
 
     ABIA_Adjust = ABIA%>% select(UniqueCarrier,ArrDelay,Origin,Dest,Month)
 
@@ -46,8 +48,9 @@ winds on a particular long route.
 
     mean_table %>% ggplot(aes(x=UniqueCarrier, y=mean_delay, group=Month)) + geom_boxplot()+ylim (1,40)
 
-![](Homework1_files/figure-markdown_strict/Problem%201b-1.png) A
-possibly more honest way to look at the data would be to plot the
+![](Homework1_files/figure-markdown_strict/Problem%201b-1.png)
+
+A possibly more honest way to look at the data would be to plot the
 distributions of average late arrivals over the months. From this view,
 we can see that even with relatively low averages, some airlines have
 far more variability in their arrival times. From the previous graph,
@@ -114,14 +117,16 @@ clear standout winner.
 
     ggplot(data = spy_adjust) + geom_line(aes(x= year,y=number_of_songs), color = "steelblue",size =2) + labs(y= "Number of Unique Songs", x="Year", title = "Musical Diversity on the Billboard Top 100") +theme_linedraw()
 
-![](Homework1_files/figure-markdown_strict/Problem%202b-1.png) In this
-figure, we are measuring musical diversity defined as the number of
-unique songs to appear on the Billboard “Top 100” list over the course
-of a given year. We omitted 1958 and 2021 from this figure, as the data
-for these two years is incomplete. We observe that musical diversity
-steadily declined from the 60’s onward into the 2000s. In 2004, musical
-diversity began to rebound to where music is almost as diverse in the
-2020s as in the measures all time high in the mid 1960s. \#\# Part C:
+![](Homework1_files/figure-markdown_strict/Problem%202b-1.png)
+
+In this figure, we are measuring musical diversity defined as the number
+of unique songs to appear on the Billboard “Top 100” list over the
+course of a given year. We omitted 1958 and 2021 from this figure, as
+the data for these two years is incomplete. We observe that musical
+diversity steadily declined from the 60’s onward into the 2000s. In
+2004, musical diversity began to rebound to where music is almost as
+diverse in the 2020s as in the measures all time high in the mid 1960s.
+\#\# Part C:
 
     twh = billboard_ce %>%
     mutate(ten_week_hit = ifelse(count >= 10, yes=1, no =0))
@@ -141,13 +146,14 @@ diversity began to rebound to where music is almost as diverse in the
 
     final_list %>% ggplot(aes(fct_reorder(performer,number_of_ten_week_hits),number_of_ten_week_hits)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Number of Ten Week Hits", x="Performing Artist", title = "Artists With the Most Ten Week Hits")+theme_linedraw()
 
-![](Homework1_files/figure-markdown_strict/Problem%202c-1.png) In this
-figure, we are dialing in on major hits that were on the Billboard “Top
-100” list for at least 10 weeks, which we will refer to as “Ten Week
-Hits”, and the artists that performed them. Some artists have been
-astonishingly successful at making many chart topping hits. We observe
-19 artists with at least 30 “Ten Week Hits”. Elton John is the most
-successful of all time, with a mind boggling 53 “Ten Week Hits”. \#
+![](Homework1_files/figure-markdown_strict/Problem%202c-1.png)
+
+In this figure, we are dialing in on major hits that were on the
+Billboard “Top 100” list for at least 10 weeks, which we will refer to
+as “Ten Week Hits”, and the artists that performed them. Some artists
+have been astonishingly successful at making many chart topping hits. We
+observe 19 artists with at least 30 “Ten Week Hits”. Elton John is the
+most successful of all time, with a mind boggling 53 “Ten Week Hits”. \#
 Problem 3 \#\# Part A:
 
     olympics_top20 <- read_csv("olympics_top20.csv")
@@ -207,18 +213,19 @@ is 10.865 cm.
     swm%>%
     ggplot() + geom_line(aes(x=year, y=age, group =sex, color = sex),size =2) + labs(y= "Athlete Age", x="Year", title = "Average Age of Olympic Swimmers") +theme_linedraw()
 
-![](Homework1_files/figure-markdown_strict/Problem%203c-1.png) How has
-the average age of Olympic swimmers changed over the years? For men, we
-initially observe that swimmers were extremely young, at 18 years old.
-The average age rose sharply into the 1920s before sharply declining to
-19 years of age, and stabilizing around 20 years old until the late
-1970s. Since the 1970s, age has been steadily increasing to the mid 20s.
-Woman swimmers were allowed to participate in the games starting in the
-1920s. Women swimmers on average have been roughly two years younger
-than their male counterparts.The overall trend however has been similar.
-In the mid to late 1970s, the average age of women swimmers began to
-steadily increase from younger than 18 to 22 years of age into the
-2000s.
+![](Homework1_files/figure-markdown_strict/Problem%203c-1.png)
+
+How has the average age of Olympic swimmers changed over the years? For
+men, we initially observe that swimmers were extremely young, at 18
+years old. The average age rose sharply into the 1920s before sharply
+declining to 19 years of age, and stabilizing around 20 years old until
+the late 1970s. Since the 1970s, age has been steadily increasing to the
+mid 20s. Woman swimmers were allowed to participate in the games
+starting in the 1920s. Women swimmers on average have been roughly two
+years younger than their male counterparts.The overall trend however has
+been similar. In the mid to late 1970s, the average age of women
+swimmers began to steadily increase from younger than 18 to 22 years of
+age into the 2000s.
 
 # Problem 4
 
