@@ -1,0 +1,60 @@
+---
+title: "Homework2"
+author: "Kevin O'Connor"
+date: "3/3/2022"
+output: html_document
+---
+
+```{r Loading Libraries, message=FALSE, warning=FALSE,show=FALSE}
+
+library(tidyverse)
+library(mosaic)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(modelr)
+library(rsample)
+library(caret)
+library(parallel)
+library(foreach)
+library(knitr)
+```
+
+# Problem 1
+```{r Problem 1a, message=FALSE, warning=FALSE}
+# Read in data
+CAPM <- read_csv("capmetro_UT.csv")
+
+# Mutate data so we aren't sorting days alphabetically.
+CAPM = mutate(CAPM,
+               day_of_week = factor(day_of_week,
+                 levels=c("Mon", "Tue", "Wed","Thu", "Fri", "Sat", "Sun")),
+               month = factor(month,
+                 levels=c("Sep", "Oct","Nov")))
+
+
+avg_board_hour = CAPM %>% group_by(hour_of_day) %>%
+  summarize(average_boarding_hour = mean(boarding))
+
+avg_board_day = CAPM %>% group_by(day_of_week) %>%
+  summarize(average_boarding_day = mean(boarding))
+
+avg_board_month = CAPM %>% group_by(month) %>%
+  summarize(average_boarding_month = mean(boarding))
+
+
+avg_board_ = CAPM %>% group_by(hour_of_day,day_of_week,month) %>%
+  summarize(average_boarding_ = mean(boarding))
+
+
+ne panel of line graphs that plots __average boardings__ grouped by hour of the day, day of week, and month.  You should facet by day of week.  Each facet should include three lines, one for each month, colored differently and with colors labeled with a legend.
+
+
+ggplot(data = avg_board_) + geom_line(aes(x= hour_of_day,y=average_boarding_, group=month,color=month )) + labs(y= "Average Boardings", x="Hour of Day", title = "Boardz") +theme_linedraw()+facet_wrap(~day_of_week)
+
+```
+
+
+
+
+
