@@ -405,14 +405,9 @@ of our bar plot are confirmed. Poor and terrible credit histories have a
 negative effect on the probability of default. This is likely due to the
 sampling methodology of the bank, where they are oversampling defaults.
 
-\#Problem 4 \#\# Part A For this problem, we will be conducting analysis
-on hotel data. The target variable of interest is “children”, a binary
-representation of whether or not parents in a specific booking bring
-children with them to a hotel or not. It is of the hotel’s interest to
-anticipate how many children may be coming in order to effectively plan
-resource utilization, as hotels don’t generally know if parents are
-brining children until they arrive. We will try to make a reliable
-prediction.
+\#Problem 4 \#\# Part A
+
+    #For this problem, we will be conducting analysis on hotel data. The target variable of interest is "children", a binary representation of whether or not parents in a specific booking bring children with them to a hotel or not. It is of the hotel's interest to anticipate how many children may be coming in order to effectively plan resource utilization, as hotels don't generally know if parents are brining children until they arrive. We will try to make a reliable prediction.
 
     HD <- read_csv("hotels_dev.csv")
     HD_filter = HD %>% filter(reserved_room_type != "F")
