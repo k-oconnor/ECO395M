@@ -405,7 +405,7 @@ of our bar plot are confirmed. Poor and terrible credit histories have a
 negative effect on the probability of default. This is likely due to the
 sampling methodology of the bank, where they are oversampling defaults.
 
-\#Problem 4 \# Part A For this problem, we will be conducting analysis
+\#Problem 4 \#\# Part A For this problem, we will be conducting analysis
 on hotel data. The target variable of interest is “children”, a binary
 representation of whether or not parents in a specific booking bring
 children with them to a hotel or not. It is of the hotel’s interest to
@@ -1122,7 +1122,7 @@ in a mean validated RMSEout of .249, which is a 78% improvement. This
 will likely be difficult to beat, but we will also try a cross validated
 lasso.
 
-\#Problem 4 \# Part A: Lasso
+## Part A: Lasso
 
     # Next, we will try a lasso regression
 
@@ -1222,30 +1222,15 @@ analysis, we will utilize the stepwise selected model. (lm\_step)
 
     confusion_table %>% ggplot(aes(FPR,TPR)) + geom_line(fill="steelblue") + labs(y= "True Positive Rate", x="False Positive Rate", title = "ROC Curve for Stepwise Model")+theme_linedraw() + geom_abline(slope=1,intercept = 0)
 
-![](Homework2_files/figure-markdown_strict/Problem%204b-1.png) \#\# Part
-C
+![](Homework2_files/figure-markdown_strict/Problem%204b-1.png)
+
+The ROC curve shows that the model consistently performs better than a
+null classifier.
+
+## Part C
 
     folds = createFolds(HV$children,k=20, list = TRUE,returnTrain = FALSE )
 
-
-    # sapply(lapply(Fold_set,unique),length)
-    # # The folds introduce limitations to our analysis. 
-    # # The levels of some variables in our folds are less than two.
-    # # We can only use folds where this error does not arise
-    # feasible_sets = c(4,8,11,12,13,15,17,18,19,20)
-    # 
-    # accuracy=foreach(x=feasible_sets, .combine='rbind')%do%{
-    # Fold_set = HV[ folds[[x]], ]
-    # hvx = model.matrix(children ~ .-1-arrival_date-deposit_type, data=Fold_set)
-    # hvy = Fold_set$children
-    # sum_pred =sum(predict.glmnet(hgglm,newx =hvx,s=c(.0001119715), type="response"))
-    # sum_actual = sum(Fold_set$children)
-    # perf = c(x,sum_pred,sum_actual)
-    # } %>% as.data.frame
-
-    # The other issue, is that the folds also do not represent every combination of
-    # possibilities, giving us the result The number of variables in newx must be 48".
-    # I don't see any way past this, so we will do this exercise on a more simple model.
 
     table=foreach(x=1:20, .combine='rbind')%do%{
     Fold_set = HV[ folds[[x]], ]

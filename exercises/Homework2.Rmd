@@ -113,7 +113,7 @@ validated_result_lm_step = mean(rmse_frame_lm_step$V1)
 After running 100 train/test splits for the stepwise selected model, and running 100/train/test splits for the baseline model, we can conclude that the stepwise model outperforms the baseline model.The validated RMSEout for the baseline model is 66,572. The validated RMSEout for the stepwise model is 63,460, or an improvement of 4.6% in RMSE. We will see if we can arrive at a stronger result with a gamma lasso.
 
 ## Part A: Gamma Lasso
-```{r Problem 2b, message=FALSE, warning=FALSE,paged.print=FALSE}
+```{r Problem 2b, message=FALSE, warning=FALSE}
 set.seed(23)
 shx = model.matrix(price ~ .-1, data=SaratogaHouses)
 shy = SaratogaHouses$price
@@ -218,7 +218,7 @@ summary(model)
 When we run a multi-nomial logistic regression on default, the findings of our bar plot are confirmed. Poor and terrible credit histories have a negative effect on the probability of default. This is likely due to the sampling methodology of the bank, where they are oversampling defaults.
 
 #Problem 4
-# Part A
+## Part A
 For this problem, we will be conducting analysis on hotel data. The target variable of interest is "children", a binary representation of whether or not parents in a specific booking bring children with them to a hotel or not. It is of the hotel's interest to anticipate how many children may be coming in order to effectively plan resource utilization, as hotels don't generally know if parents are brining children until they arrive. We will try to make a reliable prediction.
 ```{r Problem 4a, message=FALSE, warning=FALSE,paged.print=FALSE}
 
@@ -282,8 +282,7 @@ From this simple model, we then complete stepwise selection on all interactions,
 We then apply our model to 100 train/test splits, resulting in a mean validated RMSEout of .249, which is a 78% improvement. This will likely be difficult to beat, but we will also try a cross validated lasso.
 
 
-#Problem 4
-# Part A: Lasso
+## Part A: Lasso
 ```{r Problem 4a.2, message=FALSE, warning=FALSE}
 # Next, we will try a lasso regression
 
@@ -342,29 +341,13 @@ confusion_table[nrow(confusion_table)+1,] = c(x,TPR,FPR)
 
 confusion_table %>% ggplot(aes(FPR,TPR)) + geom_line(fill="steelblue") + labs(y= "True Positive Rate", x="False Positive Rate", title = "ROC Curve for Stepwise Model")+theme_linedraw() + geom_abline(slope=1,intercept = 0)
 ```
+
+The ROC curve shows that the model consistently performs better than a null classifier.
+
 ## Part C
 ```{r Problem 4c, message=FALSE, warning=FALSE}
 folds = createFolds(HV$children,k=20, list = TRUE,returnTrain = FALSE )
 
-
-# sapply(lapply(Fold_set,unique),length)
-# # The folds introduce limitations to our analysis. 
-# # The levels of some variables in our folds are less than two.
-# # We can only use folds where this error does not arise
-# feasible_sets = c(4,8,11,12,13,15,17,18,19,20)
-# 
-# accuracy=foreach(x=feasible_sets, .combine='rbind')%do%{
-# Fold_set = HV[ folds[[x]], ]
-# hvx = model.matrix(children ~ .-1-arrival_date-deposit_type, data=Fold_set)
-# hvy = Fold_set$children
-# sum_pred =sum(predict.glmnet(hgglm,newx =hvx,s=c(.0001119715), type="response"))
-# sum_actual = sum(Fold_set$children)
-# perf = c(x,sum_pred,sum_actual)
-# } %>% as.data.frame
-
-# The other issue, is that the folds also do not represent every combination of
-# possibilities, giving us the result The number of variables in newx must be 48".
-# I don't see any way past this, so we will do this exercise on a more simple model.
 
 table=foreach(x=1:20, .combine='rbind')%do%{
 Fold_set = HV[ folds[[x]], ]
@@ -381,7 +364,6 @@ mean(table$Detection_Rate)
 # The model predicts ~6% more children on average across 20 folds.
 
 table
-
 
 ```
 
