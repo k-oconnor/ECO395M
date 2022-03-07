@@ -2,7 +2,7 @@
 title: "Homework2"
 author: "Kevin O'Connor"
 date: "3/3/2022"
-output: html_document
+output: md_document
 ---
 
 ```{r Loading Libraries, message=FALSE, warning=FALSE,show=FALSE}
@@ -18,9 +18,16 @@ library(caret)
 library(parallel)
 library(foreach)
 library(knitr)
+library(gamlr)
+library(glmnet)
+library(nnet)
+library(ROCR)
 ```
 
 # Problem 1
+## Part A
+We are tasked with creating a plot of average boardings at each hour of the day, for each day of the week, with a line corresponding to each month in the data set.
+
 ```{r Problem 1a, message=FALSE, warning=FALSE}
 # Read in data
 CAPM <- read_csv("capmetro_UT.csv")
@@ -32,29 +39,343 @@ CAPM = mutate(CAPM,
                month = factor(month,
                  levels=c("Sep", "Oct","Nov")))
 
-
-avg_board_hour = CAPM %>% group_by(hour_of_day) %>%
-  summarize(average_boarding_hour = mean(boarding))
-
-avg_board_day = CAPM %>% group_by(day_of_week) %>%
-  summarize(average_boarding_day = mean(boarding))
-
-avg_board_month = CAPM %>% group_by(month) %>%
-  summarize(average_boarding_month = mean(boarding))
-
-
 avg_board_ = CAPM %>% group_by(hour_of_day,day_of_week,month) %>%
   summarize(average_boarding_ = mean(boarding))
 
 
-ne panel of line graphs that plots __average boardings__ grouped by hour of the day, day of week, and month.  You should facet by day of week.  Each facet should include three lines, one for each month, colored differently and with colors labeled with a legend.
-
-
-ggplot(data = avg_board_) + geom_line(aes(x= hour_of_day,y=average_boarding_, group=month,color=month )) + labs(y= "Average Boardings", x="Hour of Day", title = "Boardz") +theme_linedraw()+facet_wrap(~day_of_week)
+ggplot(data = avg_board_) + geom_line(aes(x= hour_of_day,y=average_boarding_, group=month,color=month ),size =1) + labs(y= "Average Boardings", x="Hour of Day", title = "Average Boardings for each Day of Week")+facet_grid(~day_of_week)+theme_linedraw()
 
 ```
+From our plot, we can see that regardless of month, ridership sharply decreases on the weekend. Peak ridership occurs around 5PM on the weekdays. An interesting interpretation of this plot could be, that as the semester goes on, students ride the bus less as the week progresses. By november, ridership declines steadily during the weekday. This could be a result of a few things, such as students getting fatigued at the end of the semester, and skipping class later in the week. This could also be due to the holidays at the end of november, where many students leave campus for Thanksgiving on wednesday, decreasing ridership.
 
 
+## Part B
+```{r Problem 1b, message=FALSE, warning=FALSE}
+ avg_board_ = CAPM %>% group_by(timestamp,day_of_week,weekend,temperature) 
+
+ggplot(data = avg_board_) + geom_point(aes(x= temperature,y=boarding, group=weekend,color=weekend ),size =1) + labs(y= "Boardings", x="Temperature (Farenheit)", title = "Average Boardings for Each Hour of the Day vs. Temperature")+facet_wrap(~hour_of_day)+theme_linedraw()
+
+```
+An interesting interpretation from this plot could be how there are gaps in the data around 5-6PM when the temperature is near 70 degrees. We might assume that at the end of the workday, riders are more likely to walk to thier destination when the weather is pleasant. 
+
+# Problem 2
+## Part A:
+```{r Problem 2a, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# Build the best linear model for price that you can.  It should clearly outperform the "medium" model that we considered in class.  Use any combination of transformations, engineering features, polynomial terms, and interactions that you want; and use any strategy for selecting the model that you want.  
+set.seed(23)
+
+# Due to the randomness introduced by random train/test splits, we want to create
+# dependable baselines for comparing model performance. We will conduct 100 train/test splits
+# and average the RMSE_out
+rmse_frame_lm_med=foreach(x=1:100, .combine='rbind')%do%{
+
+x = initial_split(SaratogaHouses, prop = 0.8)
+saratoga_train = training(x)
+saratoga_test = testing(x)
+
+# baseline medium model with 11 main effects
+lm_medium = lm(price ~ lotSize + age + livingArea + pctCollege + bedrooms + 
+		fireplaces + bathrooms + rooms + heating + fuel + centralAir, data=saratoga_train)
+
+modelr::rmse(lm_medium,saratoga_test)
+} %>% as.data.frame
+
+validated_result_lm_med = mean(rmse_frame_lm_med$V1)
+# 66,572
 
 
+# We will attempt stepwise selection, using the medium model provided as baseline.
+# Stepwise selection seems appropriate for this model, as the feature set is relativeley small. (Only 16 variables)
+lm_step = step(lm_medium,scope=~(.)^2)
+
+getCall(lm_step)
+coef(lm_step)
+# Stepwise selection returns a large model, with 26 coefficients including interactions.
+
+lm_step = step(lm_medium,scope=~(.)^2)
+
+rmse_frame_lm_step=foreach(x=1:100, .combine='rbind')%do%{
+
+x = initial_split(SaratogaHouses, prop = 0.8)
+saratoga_train = training(x)
+saratoga_test = testing(x)
+
+modelr::rmse(lm_step,saratoga_test)
+} %>% as.data.frame
+
+validated_result_lm_step = mean(rmse_frame_lm_step$V1)
+# 63,460
+
+```
+After running 100 train/test splits for the stepwise selected model, and running 100/train/test splits for the baseline model, we can conclude that the stepwise model outperforms the baseline model.The validated RMSEout for the baseline model is 66,572. The validated RMSEout for the stepwise model is 63,460, or an improvement of 4.6% in RMSE. We will see if we can arrive at a stronger result with a gamma lasso.
+
+## Part A: Gamma Lasso
+```{r Problem 2b, message=FALSE, warning=FALSE}
+set.seed(23)
+shx = model.matrix(price ~ .-1, data=SaratogaHouses)
+shy = SaratogaHouses$price
+shcv = cv.gamlr(shx, shy, nfold=10, family="gaussian", verb=FALSE)
+
+x= plot(shcv, bty="n")
+
+sh.min = coef(shcv, select="min")
+
+# This results in the optimal lambda at the min
+log(shcv$lambda.min)
+
+# This counts the number of non-zero coefficients
+sum(sh.min!=0)
+
+
+mse = min(shcv$cvm)
+rmse = sqrt(mse)
+print(rmse)
+rmse(lm_medium, saratoga_test)
+# 57,590
+
+
+# We get all of our named coefficients and print a table
+df = data.frame(name = sh.min@Dimnames[[1]][sh.min@i + 1], coefficient = sh.min@x)
+print(df)
+```
+The cross validated gamma lasso at lambda.min proves to improve our error dramatically.With 14 coefficients at lambda (6.55), RMSEout is 57,590, which is a ~13.5% improvement over baseline. Next, we will apply K-nearest neighbors, and see which model is the best.
+
+## Part B: KNN
+```{r Problem 2c, message=FALSE, warning=FALSE}
+
+# We first will standardize our regressors, using the scale function.
+set.seed(23)
+scaled = data.frame(scale(SaratogaHouses[2:10]))
+scaled[10] = SaratogaHouses[1]
+
+# Before we can move on to more complete cross-validation, we first will tune our
+# k hyper-parameter
+saratoga_split = initial_split(scaled, prop = 0.8)
+saratoga_train = training(saratoga_split)
+saratoga_test = testing(saratoga_split)
+
+rmse_out=foreach(k=1:150, .combine='rbind')%do%{
+
+
+knn_model = knnreg(price ~ lotSize + age + landValue + livingArea + pctCollege + bedrooms + fireplaces + bathrooms + rooms, data = saratoga_train, k =k)
+modelr::rmse(knn_model,saratoga_test)
+} %>% as.data.frame
+rmse_out
+
+row_adjust = c(1:150)
+rownames(rmse_out) = row_adjust
+rmse_out$k <- c(1:150)
+
+
+ggplot(rmse_out) + geom_line(aes(x=k,y=V1),size =2) + labs(y= "RMSE", x="K", title = "Root Mean Square Error for Different Values of K") +theme_linedraw() + geom_vline(xintercept=25, linetype="dashed", color = "red")
+# From this analysis, we can conclude that k=25, is a very reasonable choice.
+
+# Next, we will validate our KNN regression across 100 train/test splits.
+rmse_frame=foreach(x=1:100, .combine='rbind')%do%{
+
+x = initial_split(scaled, prop = 0.8)
+saratoga_train = training(x)
+saratoga_test = testing(x)
+
+knn_model = knnreg(price ~ lotSize + age + landValue + livingArea + pctCollege + bedrooms + fireplaces + bathrooms + rooms, data = saratoga_train, k =25)
+
+modelr::rmse(knn_model,saratoga_test)
+} %>% as.data.frame
+
+validated_result_KNN = mean(rmse_frame$V1)
+# 62,609
+```
+KNN poses a new challenge for cross validation. We cannot cross-validate until we find a reasonable value for our hyperparameter (K). Firstly, we conduct a baseline train/test split, and plot the RMSE across different values of K for tuning. From this, we can assume that K=25 is a reasonable choice.
+
+We then apply our KNN model, with K=25, across 100 different train/test splits, and take an average of the RMSE over all splits. This results in a validated RMSEout mean of 62,609, which is a ~6% improvement over baseline. While the KNN model is a strong improvement over baseline, the gamma lasso model is by far the best for out of sample accuracy.
+
+#Problem 3
+# Part A
+For this problem, given a set of data on consumer defaults at a German bank, we are to find the probability of default at each credit rating.
+```{r Problem 3a, message=FALSE, warning=FALSE}
+
+GC <- read_csv("german_credit.csv")
+
+def_prob = GC %>% group_by(history) %>%
+  summarize(prob = mean(Default))
+
+
+def_prob %>% ggplot(aes(prob,history)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Credit Rating", x="Probability of Default", title = "Credit Rating and Default Rates for Selected Data")+theme_linedraw()
+```
+Finding the default probability for each credit rating is trivial. We can simply sum the number of defaults for each category, and divde by the total number of consumers in each credit class.
+Interestingly, the default rates seem counterfactual. As credit ratings get worse, the default probability goes down.
+
+# Part B
+```{r Problem 3b, message=FALSE, warning=FALSE}
+model = multinom(Default ~duration + amount + installment + age + history + purpose + foreign, data=GC )
+summary(model)
+```
+When we run a multi-nomial logistic regression on default, the findings of our bar plot are confirmed. Poor and terrible credit histories have a negative effect on the probability of default. This is likely due to the sampling methodology of the bank, where they are oversampling defaults.
+
+#Problem 4
+# Part A
+For this problem, we will be conducting analysis on hotel data. The target variable of interest is "children", a binary representation of whether or not parents in a specific booking bring children with them to a hotel or not. It is of the hotel's interest to anticipate how many children may be coming in order to effectively plan resource utilization, as hotels don't generally know if parents are brining children until they arrive. We will try to make a reliable prediction.
+```{r Problem 4a, message=FALSE, warning=FALSE}
+
+HD <- read_csv("hotels_dev.csv")
+HD_filter = HD %>% filter(reserved_room_type != "F")
+
+
+rmse_frame_baseline_1=foreach(x=1:10, .combine='rbind')%do%{
+
+x = initial_split(HD_filter, prop = 0.8)
+HD_train = training(x)
+HD_test = testing(x)
+
+# baseline small model with 4 main effects
+baseline_1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest, data=HD_train, family = 'binomial')
+modelr::rmse(baseline_1,HD_test)
+} %>% as.data.frame
+
+validated_result_baseline_1 = mean(rmse_frame_baseline_1$V1)
+# 3.12
+
+rmse_frame_baseline_2=foreach(x=1:10, .combine='rbind')%do%{
+
+x = initial_split(HD_filter, prop = 0.8)
+HD_train = training(x)
+HD_test = testing(x)
+
+# baseline large model with 20 main effects
+baseline_2 = glm(children ~ .-arrival_date, data=HD_train,family='binomial')
+modelr::rmse(baseline_2,HD_test)
+} %>% as.data.frame
+
+validated_result_baseline_2 = mean(rmse_frame_baseline_2$V1)
+# 4.04
+
+sensible_model =lm(children ~ adults + stays_in_weekend_nights + stays_in_week_nights + hotel+meal+total_of_special_requests + customer_type, data=HD_filter)
+
+lm_step = step(sensible_model,scope=~(.)^2)
+
+getCall(lm_step)
+coef(lm_step)
+# Stepwise selection returns a large model, with 21 coefficients including interactions.
+
+rmse_frame_lm_step=foreach(x=1:100, .combine='rbind')%do%{
+
+x = initial_split(HD_filter, prop = 0.8)
+HD_train = training(x)
+HD_test = testing(x)
+
+modelr::rmse(lm_step,HD_test)
+} %>% as.data.frame
+
+validated_result_lm_step = mean(rmse_frame_lm_step$V1)
+# .249
+```
+We first set of two simple baseline models. We run two logistic regressions on the binary outcome "children". The first of which is very simple, and the second of which contains all possible variables except arrival date. The first baseline model seems to outperform the larger baseline model with mean log(RMSEout)=1.14. We will try to compete with the results of the smaller model.
+
+The first attempt will be based on a simple and intuitive linear probability model.(sensible_model)
+From this simple model, we then complete stepwise selection on all interactions, to arrive at (lm_step).
+We then apply our model to 100 train/test splits, resulting in a mean validated RMSEout of .249, which is a 78% improvement. This will likely be difficult to beat, but we will also try a cross validated lasso.
+
+
+#Problem 4
+# Part A: Lasso
+```{r Problem 4a.2, message=FALSE, warning=FALSE}
+# Next, we will try a lasso regression
+
+HD_filter = HD %>% filter(reserved_room_type != "F")
+
+hdx = model.matrix(children ~ .-1-arrival_date, data=HD_filter)
+hdy = HD_filter$children
+cv.hgglm = cv.glmnet(hdx,hdy,family="binomial",folds=20,standardize = TRUE)
+cv.hgglm$lambda.min
+# .0001119715
+plot(cv.hgglm, bty = "n")
+
+
+hd_min = coef(cv.hgglm, select="min")
+# This results in the optimal lambda at the min
+
+# This counts the number of non-zero coefficients
+sum(hd_min!=0)
+
+
+mse = min(cv.hgglm$cvm)
+rmse = sqrt(mse)
+print(rmse)
+# .603
+
+# The cross validated gamma lasso outperforms both baselines
+
+# We get all of our named coefficients and print a table
+df = data.frame(name = hd_min@Dimnames[[1]][hd_min@i + 1], coefficient = hd_min@x)
+print(df)
+```
+The lasso regression outperforms both baseline models considerably(validated mean RMSEout =.603), however, the stepwise selected model considerably outperforms the lasso.So, for further analysis, we will utilize the stepwise selected model. (lm_step)
+
+
+## Part B
+```{r Problem 4b, message=FALSE, warning=FALSE}
+HV <- read_csv("hotels_val.csv")
+hvy = HV$children
+
+
+pred =predict(lm_step,newdata=HV)
+confusion_table = data.frame(fold_id=integer(),TPR=integer(),FPR=integer())
+
+level = seq(.1,.8,by=.05)
+
+
+confusion_level=foreach(x=level)%do%{
+yhat_test = ifelse(pred > x,1,0)
+confusion_out = table(y=hvy, yhat = yhat_test)
+TPR = (confusion_out[2,2]/(confusion_out[2,1]+confusion_out[2,2]))
+FPR = (confusion_out[1,2]/(confusion_out[1,1]+confusion_out[1,2]))
+confusion_table[nrow(confusion_table)+1,] = c(x,TPR,FPR)
+}
+
+
+confusion_table %>% ggplot(aes(FPR,TPR)) + geom_line(fill="steelblue") + labs(y= "True Positive Rate", x="False Positive Rate", title = "ROC Curve for Stepwise Model")+theme_linedraw() + geom_abline(slope=1,intercept = 0)
+```
+## Part C
+```{r Problem 4c, message=FALSE, warning=FALSE}
+folds = createFolds(HV$children,k=20, list = TRUE,returnTrain = FALSE )
+
+
+# sapply(lapply(Fold_set,unique),length)
+# # The folds introduce limitations to our analysis. 
+# # The levels of some variables in our folds are less than two.
+# # We can only use folds where this error does not arise
+# feasible_sets = c(4,8,11,12,13,15,17,18,19,20)
+# 
+# accuracy=foreach(x=feasible_sets, .combine='rbind')%do%{
+# Fold_set = HV[ folds[[x]], ]
+# hvx = model.matrix(children ~ .-1-arrival_date-deposit_type, data=Fold_set)
+# hvy = Fold_set$children
+# sum_pred =sum(predict.glmnet(hgglm,newx =hvx,s=c(.0001119715), type="response"))
+# sum_actual = sum(Fold_set$children)
+# perf = c(x,sum_pred,sum_actual)
+# } %>% as.data.frame
+
+# The other issue, is that the folds also do not represent every combination of
+# possibilities, giving us the result The number of variables in newx must be 48".
+# I don't see any way past this, so we will do this exercise on a more simple model.
+
+table=foreach(x=1:20, .combine='rbind')%do%{
+Fold_set = HV[ folds[[x]], ]
+sum_pred =round(sum(predict(lm_step,newdata = Fold_set, type="response")))
+sum_actual = sum(Fold_set$children)
+perf = c(x,sum_pred,sum_actual)
+} %>% as.data.frame
+table = table %>% mutate(Detection_Rate = V2/V3)
+names(table)[1] = 'Fold'
+names(table)[2] = 'Predicted Number of Children'
+names(table)[3] = 'Actual Number of Children'
+mean(table$Detection_Rate)
+# 1.056
+# The model predicts ~6% more children on average across 20 folds.
+
+table
+
+
+```
+The model predicts on average, 6% more children expected than actual across the 20 folds.
 
