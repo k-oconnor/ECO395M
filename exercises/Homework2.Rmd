@@ -46,6 +46,7 @@ avg_board_ = CAPM %>% group_by(hour_of_day,day_of_week,month) %>%
 ggplot(data = avg_board_) + geom_line(aes(x= hour_of_day,y=average_boarding_, group=month,color=month ),size =1) + labs(y= "Average Boardings", x="Hour of Day", title = "Average Boardings for each Day of Week")+facet_grid(~day_of_week)+theme_linedraw()
 
 ```
+
 From our plot, we can see that regardless of month, ridership sharply decreases on the weekend. Peak ridership occurs around 5PM on the weekdays. An interesting interpretation of this plot could be, that as the semester goes on, students ride the bus less as the week progresses. By november, ridership declines steadily during the weekday. This could be a result of a few things, such as students getting fatigued at the end of the semester, and skipping class later in the week. This could also be due to the holidays at the end of november, where many students leave campus for Thanksgiving on wednesday, decreasing ridership.
 
 
@@ -56,6 +57,7 @@ From our plot, we can see that regardless of month, ridership sharply decreases 
 ggplot(data = avg_board_) + geom_point(aes(x= temperature,y=boarding, group=weekend,color=weekend ),size =1) + labs(y= "Boardings", x="Temperature (Farenheit)", title = "Average Boardings for Each Hour of the Day vs. Temperature")+facet_wrap(~hour_of_day)+theme_linedraw()
 
 ```
+
 An interesting interpretation from this plot could be how there are gaps in the data around 5-6PM when the temperature is near 70 degrees. We might assume that at the end of the workday, riders are more likely to walk to thier destination when the weather is pleasant. 
 
 # Problem 2
@@ -107,10 +109,11 @@ validated_result_lm_step = mean(rmse_frame_lm_step$V1)
 # 63,460
 
 ```
+
 After running 100 train/test splits for the stepwise selected model, and running 100/train/test splits for the baseline model, we can conclude that the stepwise model outperforms the baseline model.The validated RMSEout for the baseline model is 66,572. The validated RMSEout for the stepwise model is 63,460, or an improvement of 4.6% in RMSE. We will see if we can arrive at a stronger result with a gamma lasso.
 
 ## Part A: Gamma Lasso
-```{r Problem 2b, message=FALSE, warning=FALSE}
+```{r Problem 2b, message=FALSE, warning=FALSE,paged.print=FALSE}
 set.seed(23)
 shx = model.matrix(price ~ .-1, data=SaratogaHouses)
 shy = SaratogaHouses$price
@@ -185,6 +188,7 @@ modelr::rmse(knn_model,saratoga_test)
 validated_result_KNN = mean(rmse_frame$V1)
 # 62,609
 ```
+
 KNN poses a new challenge for cross validation. We cannot cross-validate until we find a reasonable value for our hyperparameter (K). Firstly, we conduct a baseline train/test split, and plot the RMSE across different values of K for tuning. From this, we can assume that K=25 is a reasonable choice.
 
 We then apply our KNN model, with K=25, across 100 different train/test splits, and take an average of the RMSE over all splits. This results in a validated RMSEout mean of 62,609, which is a ~6% improvement over baseline. While the KNN model is a strong improvement over baseline, the gamma lasso model is by far the best for out of sample accuracy.
@@ -202,6 +206,7 @@ def_prob = GC %>% group_by(history) %>%
 
 def_prob %>% ggplot(aes(prob,history)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Credit Rating", x="Probability of Default", title = "Credit Rating and Default Rates for Selected Data")+theme_linedraw()
 ```
+
 Finding the default probability for each credit rating is trivial. We can simply sum the number of defaults for each category, and divde by the total number of consumers in each credit class.
 Interestingly, the default rates seem counterfactual. As credit ratings get worse, the default probability goes down.
 
@@ -215,7 +220,7 @@ When we run a multi-nomial logistic regression on default, the findings of our b
 #Problem 4
 # Part A
 For this problem, we will be conducting analysis on hotel data. The target variable of interest is "children", a binary representation of whether or not parents in a specific booking bring children with them to a hotel or not. It is of the hotel's interest to anticipate how many children may be coming in order to effectively plan resource utilization, as hotels don't generally know if parents are brining children until they arrive. We will try to make a reliable prediction.
-```{r Problem 4a, message=FALSE, warning=FALSE}
+```{r Problem 4a, message=FALSE, warning=FALSE,paged.print=FALSE}
 
 HD <- read_csv("hotels_dev.csv")
 HD_filter = HD %>% filter(reserved_room_type != "F")
@@ -269,6 +274,7 @@ modelr::rmse(lm_step,HD_test)
 validated_result_lm_step = mean(rmse_frame_lm_step$V1)
 # .249
 ```
+
 We first set of two simple baseline models. We run two logistic regressions on the binary outcome "children". The first of which is very simple, and the second of which contains all possible variables except arrival date. The first baseline model seems to outperform the larger baseline model with mean log(RMSEout)=1.14. We will try to compete with the results of the smaller model.
 
 The first attempt will be based on a simple and intuitive linear probability model.(sensible_model)
@@ -309,6 +315,7 @@ print(rmse)
 df = data.frame(name = hd_min@Dimnames[[1]][hd_min@i + 1], coefficient = hd_min@x)
 print(df)
 ```
+
 The lasso regression outperforms both baseline models considerably(validated mean RMSEout =.603), however, the stepwise selected model considerably outperforms the lasso.So, for further analysis, we will utilize the stepwise selected model. (lm_step)
 
 
@@ -377,5 +384,6 @@ table
 
 
 ```
+
 The model predicts on average, 6% more children expected than actual across the 20 folds.
 
