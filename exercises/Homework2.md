@@ -38,16 +38,17 @@ month in the data set.
 
     ggplot(data = avg_board_) + geom_line(aes(x= hour_of_day,y=average_boarding_, group=month,color=month ),size =1) + labs(y= "Average Boardings", x="Hour of Day", title = "Average Boardings for each Day of Week")+facet_grid(~day_of_week)+theme_linedraw()
 
-![](Homework2_files/figure-markdown_strict/Problem%201a-1.png) From our
-plot, we can see that regardless of month, ridership sharply decreases
-on the weekend. Peak ridership occurs around 5PM on the weekdays. An
-interesting interpretation of this plot could be, that as the semester
-goes on, students ride the bus less as the week progresses. By november,
-ridership declines steadily during the weekday. This could be a result
-of a few things, such as students getting fatigued at the end of the
-semester, and skipping class later in the week. This could also be due
-to the holidays at the end of november, where many students leave campus
-for Thanksgiving on wednesday, decreasing ridership.
+![](Homework2_files/figure-markdown_strict/Problem%201a-1.png)
+
+From our plot, we can see that regardless of month, ridership sharply
+decreases on the weekend. Peak ridership occurs around 5PM on the
+weekdays. An interesting interpretation of this plot could be, that as
+the semester goes on, students ride the bus less as the week progresses.
+By november, ridership declines steadily during the weekday. This could
+be a result of a few things, such as students getting fatigued at the
+end of the semester, and skipping class later in the week. This could
+also be due to the holidays at the end of november, where many students
+leave campus for Thanksgiving on wednesday, decreasing ridership.
 
 ## Part B
 
@@ -55,11 +56,12 @@ for Thanksgiving on wednesday, decreasing ridership.
 
     ggplot(data = avg_board_) + geom_point(aes(x= temperature,y=boarding, group=weekend,color=weekend ),size =1) + labs(y= "Boardings", x="Temperature (Farenheit)", title = "Average Boardings for Each Hour of the Day vs. Temperature")+facet_wrap(~hour_of_day)+theme_linedraw()
 
-![](Homework2_files/figure-markdown_strict/Problem%201b-1.png) An
-interesting interpretation from this plot could be how there are gaps in
-the data around 5-6PM when the temperature is near 70 degrees. We might
-assume that at the end of the workday, riders are more likely to walk to
-thier destination when the weather is pleasant.
+![](Homework2_files/figure-markdown_strict/Problem%201b-1.png)
+
+An interesting interpretation from this plot could be how there are gaps
+in the data around 5-6PM when the temperature is near 70 degrees. We
+might assume that at the end of the workday, riders are more likely to
+walk to thier destination when the weather is pleasant.
 
 # Problem 2
 
@@ -356,12 +358,13 @@ each credit rating.
 
     def_prob %>% ggplot(aes(prob,history)) + geom_col(fill="steelblue") + coord_flip() + labs(y= "Credit Rating", x="Probability of Default", title = "Credit Rating and Default Rates for Selected Data")+theme_linedraw()
 
-![](Homework2_files/figure-markdown_strict/Problem%203a-1.png) Finding
-the default probability for each credit rating is trivial. We can simply
-sum the number of defaults for each category, and divde by the total
-number of consumers in each credit class. Interestingly, the default
-rates seem counterfactual. As credit ratings get worse, the default
-probability goes down.
+![](Homework2_files/figure-markdown_strict/Problem%203a-1.png)
+
+Finding the default probability for each credit rating is trivial. We
+can simply sum the number of defaults for each category, and divde by
+the total number of consumers in each credit class. Interestingly, the
+default rates seem counterfactual. As credit ratings get worse, the
+default probability goes down.
 
 # Part B
 
