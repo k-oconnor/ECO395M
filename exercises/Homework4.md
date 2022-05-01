@@ -857,14 +857,15 @@ trend.
 
 ## Hierarchical Clustering: Quality
 
-![](Homework4_files/figure-markdown_strict/Problem%201e-1.png) To see if
-quality or color naturally becomes evident from hierarchical clustering,
-we have picked to graph clusters of factors which are strongly related
-to quality.It would appear that there are distinct categories that
-appear, and sensibly, as sulfur dioxide increases, one would expect the
-taste to get worse. Seeing clusters that appear along this scale is
-promising. Next, we will try to modify our clustering approach to see if
-we can get reliable clusters for color.
+![](Homework4_files/figure-markdown_strict/Problem%201e-1.png)
+
+To see if quality or color naturally becomes evident from hierarchical
+clustering, we have picked to graph clusters of factors which are
+strongly related to quality.It would appear that there are distinct
+categories that appear, and sensibly, as sulfur dioxide increases, one
+would expect the taste to get worse. Seeing clusters that appear along
+this scale is promising. Next, we will try to modify our clustering
+approach to see if we can get reliable clusters for color.
 
 ## Hierarchical Clustering: Color
 
@@ -881,7 +882,7 @@ perform better for predicting color.To that end, to solidify this
 assertion, we will run some supervised learning on our principle
 components.
 
-    ## [1] 94.31
+    ## [1] 95.77
 
 With a TPR of almost 95%, our principle components perform well in
 predicting.

@@ -75,6 +75,7 @@ c1 = cutree(h1,10)
 D = data.frame(factors, z = c1)
 ggplot(D) + geom_point(aes(x = total.sulfur.dioxide, y = alcohol, col=factor(z)))
 ```
+
 To see if quality or color naturally becomes evident from hierarchical clustering, we have picked to graph clusters of factors which are strongly related to quality.It would appear that there are distinct categories that appear, and sensibly, as sulfur dioxide increases, one would expect the taste to get worse. Seeing clusters that appear along this scale is promising. Next, we will try to modify our clustering approach to see if we can get reliable clusters for color.
 
 ## Hierarchical Clustering: Color
