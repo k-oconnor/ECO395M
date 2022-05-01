@@ -1,0 +1,178 @@
+---
+title: "Homework 4"
+author: "Kevin O'Connor"
+date: "4/27/2022"
+output: md_document
+---
+
+
+```{r Loading Libraries, echo=TRUE, message=FALSE, warning=FALSE, show=FALSE}
+library(tidyverse)
+library(dplyr)
+library(mosaic)
+library(ggplot2)
+library(foreach)
+library(xtable)
+library(pdp)
+library(kableExtra)
+library(randomForest)
+library(rsample)
+library(arules)
+library(arulesViz)
+```
+# Problem 1: PCA and Clustering
+## General Analysis and Data Loading
+```{r Problem 1a, echo=TRUE, message=FALSE, warning=FALSE, show=FALSE}
+vin = read.csv("wine.csv")
+
+#Encoding 
+vin$color = ifelse(vin$color == "red", 1, 0)
+kable(cor(vin, method = "pearson"))
+```
+From the correlation table, we can see which factors have strong relationships between color and quality. Color is strongly correlated with volatile acidity, and strongly negatively correlated with total sulfur dioxide.
+
+For PCA, We believe we can heavily reduce the number of features and still keep most of the variation, as a few features seem to be responsible for much of the variation.
+
+## PCA
+```{r Problem 1b,message=FALSE, warning=FALSE, echo=FALSE}
+# Removing the categories we want to predict
+composition = vin %>% select(-quality, -color)
+
+PCA = prcomp(composition,rank = 3, scale = FALSE)
+summary(PCA)
+```
+
+As we see in the above figure, our 3 principle components preserve over 99% of the variation.
+Next, we will see how each each factor is represented by our principle components.
+
+```{r Problem 1c,message=FALSE, warning=FALSE, echo=FALSE}
+summary = PCA$rotation %>% 
+  as.data.frame() %>% rownames_to_column("Factor")
+kable(summary)
+```
+Evidently, PC1 represents sulfur dioxide in the wine in question. PC2 is accounting mostly for free sulfur dioxide. PC3 accounts for residual sugar. Next, we will see if color and quality naturally appear based on our principle components.
+
+## PCA Visualization
+```{r Problem 1d,message=FALSE, warning=FALSE, echo=FALSE}
+vin_PCA = merge(vin, PCA$x[,1:3], by = "row.names")
+
+ggplot(data=vin_PCA)+geom_point(aes(x=PC2,y=PC1,color=color)) +ggtitle("Principal components (1,2)by color")
+ggplot(data=vin_PCA)+geom_point(aes(x=PC3,y=PC1,color=color)) +ggtitle("Principal components (1,3) by color")
+ggplot(data=vin_PCA)+geom_point(aes(x=PC3,y=PC2,color=color)) +ggtitle("Principal components (2,3) by color")
+ggplot(data=vin_PCA)+geom_point(aes(x=PC2,y=PC1,color=quality)) +ggtitle("Principal components by quality")
+```
+
+We see the strongest distinction in color when comparing PC1 and PC2, which makes sense intuitively, as those two components preserve the greatest variation. When we plot our main principle components against quality, we see no discernable clustering.When we try to graph the principle components against quality, we see absolutely no discernible trend.
+
+
+## Hierarchical Clustering: Quality
+```{r Problem 1e,message=FALSE, warning=FALSE, echo=FALSE}
+factors = vin %>% select(-quality, -color)
+f_scaled = scale(factors, center=TRUE, scale=TRUE)
+dist_f = dist(factors, method='euclidean')
+h1 = hclust(dist_f, method = "average")
+c1 = cutree(h1,10)
+D = data.frame(factors, z = c1)
+ggplot(D) + geom_point(aes(x = total.sulfur.dioxide, y = alcohol, col=factor(z)))
+```
+To see if quality or color naturally becomes evident from hierarchical clustering, we have picked to graph clusters of factors which are strongly related to quality.It would appear that there are distinct categories that appear, and sensibly, as sulfur dioxide increases, one would expect the taste to get worse. Seeing clusters that appear along this scale is promising. Next, we will try to modify our clustering approach to see if we can get reliable clusters for color.
+
+## Hierarchical Clustering: Color
+```{r Problem 1f,message=FALSE, warning=FALSE, echo=FALSE}
+factors = vin %>% 
+  select(-quality, -color)
+f_scaled = scale(factors, center=TRUE, scale=TRUE)
+dist_f = dist(factors, method='euclidean')
+h1 = hclust(dist_f, method = "average")
+c1 = cutree(h1,k=4)
+frame = data.frame(factors, z = c1)
+ggplot(frame) + geom_point(aes(x = total.sulfur.dioxide, y = fixed.acidity, col=factor(z)))+ ggtitle("Total Sulfur Dioxide vs Fixed Acidity")
+```
+
+When selecting clusters factors for color, and setting k=4, it appears that two distinct clusters appear, which could very well be color. As total sulfur dioxide is strongly negatively correlated with color, seeing the clustering happening on this axis is very promising.
+
+It seems that both can handle color, but neither particularly demonstrate variation in quality. However, it would appear that PCA will perform better for predicting color.To that end, to solidify this assertion, we will run some supervised learning on our principle components.
+
+
+```{r Problem 1g,message=FALSE, warning=FALSE, echo=FALSE}
+
+x = initial_split(vin_PCA, prop = 0.8)
+vin_train = training(x)
+vin_test = testing(x)                     
+
+rf_col = randomForest(color ~ PC1 + PC2 + PC3 , data = vin_train, ntree=500)
+              
+
+pred_rf = predict(rf_col, vin_test)
+yhat_rf = ifelse(pred_rf >= 0.5, 1, 0)
+# Making confusion matrix to display true positive rate
+confusion_color = table(Actual = vin_test$color, Predicted = yhat_rf)
+round(sum(diag(confusion_color))/sum(confusion_color) * 100, 2)
+
+```
+With a TPR of almost 95%, our principle components perform well in predicting.
+
+
+
+# Problem 2: Market Segmentation
+## Loading Data and PCA
+```{r Problem 2a,message=FALSE, warning=FALSE, echo=FALSE}
+smd = read.csv("social_marketing.csv")
+factors = smd %>% 
+  select(-X)
+PCA = prcomp(factors,rank = 6, scale = FALSE)
+summary(PCA)
+```
+## PCA Visualization
+```{r Problem 2b,message=FALSE, warning=FALSE, echo=FALSE}
+pca_summary = PCA$rotation %>% 
+  as.data.frame() %>% rownames_to_column("Factor") %>% 
+  arrange(desc(PC1)) 
+kable(pca_summary)
+
+```
+The results of the principle component reduction offer some very clear and insightful segmentation.
+Each principle component clearly represents the different interests and lifestyles of consumers.
+
+PC1 - The health fanatic: PC1 captures the consumer who is extremely interested in health, nutrition, and fitness. These individuals love to cook, and spend time outdoors; living a vibrant and active lifestyle. Marketing to this segment should be centered around positioning NutrientH20 as a superior product for re-hydrating and recovering from a workout.
+
+PC2 - The young female socialite: PC2 captures the consumer who loves to share photos, travel, and talk with friends. Judging by their interests in beauty and college/university, they more likely to be a  young female. With high interest in travel, they are more likely to be middle/upper middle class.Successful marketing in this category will likely involve partnership with travel and beauty influencers on social media, positioning NutrientH20 as a lifestyle brand.
+
+PC3 - The young male netizen: PC3 captures the consumer who is extremely interested in politics and travel. With high interests in online gaming, computers, and automotive, they are more likely to be males. With higher interest in college/university, they are likely in their early to late 20s. With high interest in travel, they are more likely to be middle/upper middle class.While they seem to be highly politically motivated, the safer marketing strategy will likely be to focus on gaming. Partnership with popular online games to award free content if they purchase NutrientH20 would likely be a safe way to reach this demographic.
+
+PC3 - Unclear: This principle component doesn't offer much insight. It captures some of the variation in chatter, and not much else. 
+
+PC4 - The single working woman: PC4 captures the consumer who is uses social media more generally, for talking with friends and family. Sharing some photos, and mostly for talking. They are mildly politically motivated. Judging by their interest in beauty, interest in travel, and lack of interest in parenting they are most likely working professional women. Marketing successfully in this segment is less straightforward. They are most interesting in cooking, so we can surmise that flavor is extremely important to them. It would likely be best to position NutrientH20 as a great alternative to flavorless and inferior hydration options for the hard working independent woman.
+
+PC5 - The family oriented sports fan: PC5 captures a very interesting demographic. This individual is extremely interested in family, sports fandom, and religion. They are also highly interested in food, and hence, likely prioritize flavor. Successful marketing in this area could be done in a few ways. A potentially strong way to market to this segment could be to have an endorsement deal with a prominent athelete. Seeing thier sports idols drinking NutrientH20 could have a powerful suggestive effect. Alternatively, NutrientH20 could be positioned as the drink of choice that parents and kids alike can enjoy in thier busy lives.
+
+# Problem 3: Association Rules
+## Data Reading and Rule Extraction
+```{r Problem 3a,message=FALSE, warning=FALSE, echo=FALSE}
+groc = scan(("groceries.txt"), what = "", sep = "\n")
+groc = strsplit(groc, ",")
+gt = as(groc, "transactions")
+rules = apriori(gt, parameter = c(support=.01, confidence = .05, maxlen=4))
+plot(rules,measure=c("support", "lift"), shading = "confidence")
+```
+
+From the scatter plot of rules, we see there are numerous association rules (541). We have chosen to do our analysis at fairly conservative values for support and confidence (.01) and (.05). We have chosen these levels as such, as there will likely be a lot of noise in the data, and want more strict associations.
+
+
+## Rule Visualization: By Lift
+```{r Problem 3b,message=FALSE, warning=FALSE, echo=FALSE}
+sub = subset(rules, subset = confidence > .01 & support > .025)
+saveAsGraph(sub, file = "groceries.graphml")
+rf_sub= data.frame(inspect(sub))
+rf_sub %>% arrange(desc(lift)) %>%  head(20) %>% kable(caption = "Top Twenty Rules by Lift")
+
+```
+
+## Rule Visualization: By Confidence
+```{r Problem 3c,message=FALSE, warning=FALSE, echo=FALSE}
+
+rf_sub %>% arrange(desc(confidence)) %>%  head(20) %>% kable(caption = "Top Twenty Rules by Confidence")
+```
+![Table 3](groceries.graphml)
+
+From the rules, we some very intuitive associations. Individuals tend to purchase dairy items together. When purchasing sausage, people tend to purchase buns alongside, as those items are extremely commonly consumed together. Yogurt is commonly purchased alongside fruit to put in the yogurt, so seeing that association is very sensible. When looking at the rules with the highest confidence scores, we see the top rules almost exclusively are associations between the most commonly purchased staple items (milk, eggs, and bread).These associations are very reasonable. 
