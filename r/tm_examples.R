@@ -23,7 +23,7 @@ meta(adam)
 content(adam)
 
 ## apply to all of Simon Cowell's articles
-## (probably not THE Simon Cowell: https://twitter.com/simoncowell)
+## (probably not THE Simon Cowell)
 ## "globbing" = expanding wild cards in filename paths
 file_list = Sys.glob('../data/ReutersC50/C50train/SimonCowell/*.txt')
 simon = lapply(file_list, readerPlain) 
@@ -78,9 +78,9 @@ findAssocs(DTM_simon, "genetic", .5)
 
 ## Finally, drop those terms that only occur in one or two documents
 ## This is a common step: the noise of the "long tail" (rare terms)
-##	can be huge, and there is nothing to learn if a term occured once.
+##	can be huge, and there is nothing to learn if a term occurred once.
 ## Below removes those terms that have count 0 in >95% of docs.  
-## Probably a bit stringent here... but only 50 docs!
+## Probably a bit extreme in most cases... but here only 50 docs!
 DTM_simon = removeSparseTerms(DTM_simon, 0.95)
 DTM_simon # now ~ 1000 terms (versus ~3000 before)
 
@@ -101,25 +101,17 @@ content(simon[[2]])
 content(simon[[3]])
 
 # cosine similarity
-i = 15
-j = 16
-sum(tfidf_simon[i,] * (tfidf_simon[j,]))/(sqrt(sum(tfidf_simon[i,]^2)) * sqrt(sum(tfidf_simon[j,]^2)))
-
-
-# the full set of cosine similarities
-# two helper functions that use some linear algebra for the calculations
-cosine_sim_docs = function(dtm) {
-	crossprod_simple_triplet_matrix(t(dtm))/(sqrt(col_sums(t(dtm)^2) %*% t(col_sums(t(dtm)^2))))
-}
-
-# use the function to compute pairwise cosine similarity for all documents
+# use the cosine_sim_docs function to compute pairwise cosine similarity for all documents
 cosine_sim_mat = cosine_sim_docs(tfidf_simon)
+
 # Now consider a query document
 content(simon[[17]])
 cosine_sim_mat[17,]
 
 # looks like document 16 has the highest cosine similarity
 sort(cosine_sim_mat[17,], decreasing=TRUE)
+
+# and they are about a very similar thing
 content(simon[[16]])
 content(simon[[17]])
 
@@ -180,13 +172,3 @@ content(simon[[10]])
 content(simon[[11]])
 
 # Conclusion: even just these two-number summaries still preserve a lot of information
-
-
-# Now look at the word view
-# 5-dimensional word vectors
-word_vectors = pca_simon$rotation[,1:5]
-word_vectors[984,]
-
-d_mat = dist(t(word_vectors))
-
-
